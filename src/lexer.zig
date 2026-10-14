@@ -10,7 +10,10 @@ const TokenType = enum {
     Let,
 };
 
-//const Keywords = std.StaticStringMap(TokenType).initComptime(.{})
+const Keywords = std.StaticStringMap(TokenType).initComptime(.{
+    .{"let", TokenType.Let},
+    }
+);
 
 pub const Token = struct {
     const Self = @This();
@@ -51,7 +54,13 @@ pub fn tokenize(alloc:std.mem.Allocator, source_code:[]const u8) ![]Token {
             'a'...'z','_','A'...'Z' => {
                 offset = idx;
                 while (offset<source_code.len and std.ascii.isAlphanumeric(source_code[offset])) : (offset += 1){}
-                try tokens.append(alloc, Token.create(.Identifier, source_code[idx..offset]));
+                var new_token = Token.create(.Identifier, source_code[idx..offset]);
+                if (Keywords.get(source_code[idx..offset])) |type_| {
+                    new_token.type = type_;
+                } else {
+                    new_token.type = .Identifier;
+                }
+                try tokens.append(alloc, new_token);
                 idx = offset-1;
             },
 
@@ -65,6 +74,27 @@ pub fn tokenize(alloc:std.mem.Allocator, source_code:[]const u8) ![]Token {
     return tokens.toOwnedSlice(alloc);
 }
 
+test "Lexer: keywords and identifiers" {
+    const t = std.testing;
+    const alloc = t.allocator;
+    // const code_string = "(1001)";
+    const code_string = "let x=10";
+    const output:[]const Token = &[_]Token{
+        // Token{.type = .OpenParen, .value = "("},
+        Token.create(.Let, "let"),
+        Token.create(.Identifier, "x"),
+        Token.create(.Equals, "="),
+        Token.create(.Number, "10"),
+        // Token{.type = .CloseParen, .value = ")"},
+    };
+    const result = try tokenize(alloc, code_string);
+    for (result,  output) |v1, v2| {
+        try t.expectEqual(v1.type, v2.type);
+        try t.expectEqualStrings(v1.value, v2.value);
+    }
+
+    alloc.free(result);
+}
 test "Lexer, number tokens" {
     const t = std.testing;
     const alloc = t.allocator;
