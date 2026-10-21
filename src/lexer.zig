@@ -1,6 +1,6 @@
 const std = @import("std");
 
-const TokenType = enum {
+pub const TokenType = enum {
     Number,
     Identifier,
     Equals,
@@ -8,6 +8,7 @@ const TokenType = enum {
     CloseParen,
     BinaryOperator,
     Let,
+    EOF,
 };
 
 const Keywords = std.StaticStringMap(TokenType).initComptime(.{
@@ -63,14 +64,10 @@ pub fn tokenize(alloc:std.mem.Allocator, source_code:[]const u8) ![]Token {
                 try tokens.append(alloc, new_token);
                 idx = offset-1;
             },
-
-            // '+' => try tokens.append(alloc, Token.create(.BinaryOperator,  "+")), 
-            // '-' => try tokens.append(alloc, Token.create(.BinaryOperator,  "-")), 
-            // '*' => try tokens.append(alloc, Token.create(.BinaryOperator,  "*")), 
-            // '/' => try tokens.append(alloc, Token.create(.BinaryOperator,  "/")), 
             else =>@panic("Unreachable code"),
         }
     }
+    try tokens.append(alloc, Token.create(.EOF, ""));
     return tokens.toOwnedSlice(alloc);
 }
 
@@ -85,6 +82,7 @@ test "Lexer: keywords and identifiers" {
         Token.create(.Identifier, "x"),
         Token.create(.Equals, "="),
         Token.create(.Number, "10"),
+        Token.create(.EOF, ""),
         // Token{.type = .CloseParen, .value = ")"},
     };
     const result = try tokenize(alloc, code_string);
@@ -103,6 +101,7 @@ test "Lexer, number tokens" {
     const output:[]const Token = &[_]Token{
         // Token{.type = .OpenParen, .value = "("},
         Token.create(.Number, "1001"),
+        Token.create(.EOF, ""),
         // Token{.type = .CloseParen, .value = ")"},
     };
     const result = try tokenize(alloc, code_string);
@@ -120,6 +119,7 @@ test "Lexer, single tokens" {
         Token{.type = .BinaryOperator, .value = "+"},
         Token{.type = .BinaryOperator, .value = "*"},
         Token{.type = .CloseParen, .value = ")"},
+        Token.create(.EOF, ""),
     };
     const result = try tokenize(alloc, code_string);
     for (output, result) |v1, v2| {

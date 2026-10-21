@@ -31,8 +31,21 @@ pub fn build(b: *std.Build) void {
     const lexer = b.addModule("lexer", .{
         .root_source_file = b.path("src/lexer.zig"),
         .target = target,
+        .optimize = optimize,
     });
-
+    const ast = b.addModule("ast", .{
+        .root_source_file = b.path("src/ast.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    const parser = b.addModule("parser", .{
+        .root_source_file = b.path("src/parser.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    _ = lexer;
+    _ = ast;
+    _ = parser;
     const mod = b.addModule("lfs", .{
         // The root source file is the "entry point" of this module. Users of
         // this module will only be able to access public declarations contained
@@ -45,7 +58,9 @@ pub fn build(b: *std.Build) void {
         // which requires us to specify a target.
         .target = target,
         .imports = &.{
-            .{.name = "lexer", .module=lexer},
+            // .{.name = "lexer", .module=lexer},
+            // .{.name = "ast", .module=ast},
+            // .{.name = "parser", .module=parser},
         },
     });
     
@@ -88,7 +103,6 @@ pub fn build(b: *std.Build) void {
                 // can be extremely useful in case of collisions (which can happen
                 // importing modules from different packages).
                 .{ .name = "lfs", .module = mod },
-            .{.name = "lexer", .module=lexer},
             },
         }),
     });
